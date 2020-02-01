@@ -12,6 +12,11 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   tesselations: 5,
+  mountains: 1.0,
+  perlin: 2.0,
+  path: 5.0,
+  colorTone: 1.0,
+  nightSky: false,
   'Load Scene': loadScene, // A function pointer, essentially
 };
 
@@ -22,6 +27,10 @@ let aPressed: boolean;
 let sPressed: boolean;
 let dPressed: boolean;
 let planePos: vec2;
+
+//let mountains: number;
+let prevMountains: number = 1.0;
+
 
 function loadScene() {
   square = new Square(vec3.fromValues(0, 0, 0));
@@ -82,6 +91,11 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
+  gui.add(controls, 'mountains', 0, 2).step(0.1);
+  gui.add(controls, 'perlin', 0, 20).step(0.5);
+  gui.add(controls, 'path', 0, 20).step(0.5);
+  gui.add(controls, 'colorTone', 0, 2).step(0.01);
+  gui.add(controls, 'nightSky');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -134,15 +148,19 @@ function main() {
 
   // This function will be called every frame
   function tick() {
+    // if (controls.mountains != prevMountains) {
+    //   prevMountains = controls.mountains;
+    // }
+
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     processKeyPresses();
-    renderer.render(camera, lambert, [
+    renderer.render(controls.nightSky, controls.colorTone, controls.path, controls.perlin, controls.mountains, camera, lambert, [
       plane,
     ]);
-    renderer.render(camera, flat, [
+    renderer.render(controls.nightSky, controls.colorTone, controls.path, controls.perlin, controls.mountains, camera, flat, [
       square,
     ]);
     stats.end();

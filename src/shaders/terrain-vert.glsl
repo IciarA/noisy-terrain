@@ -6,12 +6,15 @@
 // Smoothstep creates transition ()
 // Can also use sin functions
 
-// 2 noise functions - one for mountains and one for 
+// 2 noise functions - one for mountains and one for groudn - combine using fbm as t for 
 
 uniform mat4 u_Model;
 uniform mat4 u_ModelInvTr;
 uniform mat4 u_ViewProj;
 uniform vec2 u_PlanePos; // Our location in the virtual world displayed by the plane
+uniform float u_Mount;
+uniform float u_Perlin;
+uniform float u_Path;
 
 in vec4 vs_Pos;
 in vec4 vs_Nor;
@@ -21,15 +24,16 @@ out vec3 fs_Pos;
 out vec4 fs_Nor;
 out vec4 fs_Col;
 
-out float fs_Sine;
-
 out float fs_dist;
 out vec2 fs_point;
 
+out vec2 fs_p;
+out float fs_test;
+out float fs_colM1;
+out float fs_colM2;
+out float fs_tval;
+out float fs_ry;
 
-// What is the seed value for?
-// Erosion - loop through all the 9 grids? How do we now the size of the grids?
-// How to make it smoother so there are no clear lines caused by worley
 
 float random1( vec2 p , vec2 seed) {
   return fract(sin(dot(p + seed, vec2(127.1, 311.7))) * 43758.5453);
@@ -98,6 +102,22 @@ float fbm3 (vec2 p) {
     return total;
 }
 
+float fbm32 (vec2 p) {
+    // Initialize the variables to be used
+    float total = 0.0;
+    float amplitude = 0.5;
+    int octaves = 8;
+
+    // For loop that interates through octaves
+    for (int i = 0; i < octaves; i++) {
+        total += amplitude * interpNoise2D(p);
+        p *= 3.0;
+        amplitude *= .5;
+    }
+
+    return total;
+}
+
 float fbm(float x, float y) {
   float total = 0.f;
   float persistence = 0.1f;
@@ -114,28 +134,38 @@ float fbm(float x, float y) {
   return total;
 }
 
-float fbm2(vec2 x, float H )
-{    
-    float G = pow(2.f, -H);
-    float f = 1.0;
-    float a = 1.0;
-    float t = 0.0;
-    int numOctaves = 8;
-    for( int i=0; i<numOctaves; i++ )
-    {
-        t += a*rand(f*x);
-        f *= 2.0;
-        a *= G;
-    }
-    return t;
-}
-
 
 
 // Perlin noise 
-float fade(float t) {
-  return t*t*t*(t*(t*6.0 - 15.0) + 10.0);
+vec2 hash( vec2 x )
+{
+    const vec2 k = vec2( 0.3183099, 0.3678794 );
+    x = x*k + k.yx;
+    return -1.0 + u_Perlin*fract( 16.0 * k*fract( x.x*x.y*(x.x+x.y)) );
 }
+
+float noised( vec2 p )
+{
+  vec2 i = floor( p );
+  vec2 f = fract( p );
+
+  vec2 u = f*f*f*(f*(f*6.0-15.0)+10.0);
+  vec2 du = 30.0*f*f*(f*(f-2.0)+1.0);
+
+  vec2 ga = hash( i + vec2(0.0,0.0) );
+  vec2 gb = hash( i + vec2(1.0,0.0) );
+  vec2 gc = hash( i + vec2(0.0,1.0) );
+  vec2 gd = hash( i + vec2(1.0,1.0) );
+
+  float va = dot( ga, f - vec2(0.0,0.0) );
+  float vb = dot( gb, f - vec2(1.0,0.0) );
+  float vc = dot( gc, f - vec2(0.0,1.0) );
+  float vd = dot( gd, f - vec2(1.0,1.0) );
+
+  return va + u.x*(vb-va) + u.y*(vc-va) + u.x*u.y*(va-vb-vc+vd);
+}
+
+
 
 
 void main()
@@ -147,19 +177,18 @@ void main()
   // The cell where the current point is
   vec2 p = vec2(floor((vs_Pos.x + u_PlanePos.x) * m), floor((vs_Pos.z + u_PlanePos.y) * n));
   // The random point within that cell
-  vec2 rand = p + random(p);
+  vec2 randVec = p + random(p);
 
   // Variables to keep track of the closest random point to the current point and their distance
-  vec2 final_point = rand;
-  vec2 curr_rand = rand;
+  vec2 final_point = randVec;
+  vec2 curr_rand = randVec;
   float dist = 999999.00;
   float dist2 = 999999.00;
   float dist3 = 999999.00;
 
   float result = 0.f;
 
-  // Loops that iterates through all the adjacent cells to the current point to find the closest of the
-  // random points.
+  // Worley Noise (not used, left just in case)
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       float i_float = float(i);
@@ -186,8 +215,8 @@ void main()
 
   result = -dist + dist2;
   result = pow(clamp(result, 0.1f, 0.9f) - 0.1f, 0.5f);
-  //result = pow(result, 2.f);
-  //vec2 worley = vec2(final_point[0] / m, final_point[1] / n)
+
+    float final_result = pow(mix(result, fbm3(p), 0.3f), 4.f) * 5.f;
 
 
   p = vec2(vs_Pos.x + u_PlanePos.x, vs_Pos.z + u_PlanePos.y);
@@ -196,31 +225,51 @@ void main()
   float test = fbm3( test_p );
 
 
-  float final_result = pow(mix(result, fbm3(p), 0.3f), 4.f) * 5.f;
 
-  //vec2 p2 = vec2(final_result, final_result);
-  //vec2 q2 = vec2( fbm3( p + vec2(0.0,0.0) ), fbm3( p + vec2(5.2,1.3) ) );
-  //vec2 r = vec2( fbm3( p + 4.0 * q2 + vec2(1.7,9.2) ), fbm3( p + 4.0 * q2 + vec2(8.3,2.8) ) );
-  //float final_result2 = pow(mix(result, fbm3( p + 4.0 * r ), 0.3f), 4.f);
   
   
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
+  // Mountains
+  float path = smoothstep(0.2, 0.7, abs(noised(p / 10.0)) * u_Path);
+  float mountains = ((path * smoothstep(0.0, 2.0, fbm3(p) * 3.0)) * 2.5);
 
+  if (mountains < 0.2) {
+    mountains = mix(mountains, test, 0.2);
+  }
+
+  // Flat ground
+  float ground = mix((smoothstep(0.001, 0.3, abs(noised(p / 20.0))) / 4.f), fbm3(p), 0.4);
+
+  // Mixing val
+  float t = smoothstep(0.45, 0.55, fbm(p.x / 15.f, p.y / 15.f));
+  float height = mix(mountains, ground, t);
+  if (u_Mount <= 1.0) {
+    t = smoothstep(0.45, 0.55, fbm(p.x / 15.f, p.y / 15.f)) * u_Mount;
+    height = mix(mountains, ground, t);
+  }
+  else {
+    t = smoothstep(0.45, 0.55, fbm(p.x / 15.f, p.y / 15.f));
+    if (t <= 0.95) {
+      t = u_Mount - 1.0;
     }
+    height = mix(mountains, ground, t);
   }
   
+
   
-  
-  //fs_Pos = vs_Pos.xyz;
   fs_Pos.x = vs_Pos.x;
-  fs_Pos.y = final_result;
+  fs_Pos.y = height;
   fs_Pos.z = vs_Pos.z;
-  fs_Sine = (sin((vs_Pos.x + u_PlanePos.x) * 3.14159 * 0.1) + cos((vs_Pos.z + u_PlanePos.y) * 3.14159 * 0.1));
-  //vec4 modelposition = vec4(vs_Pos.x, fs_Sine * 2.0, vs_Pos.z, 1.0);
-  //vec4 modelposition = vec4(vs_Pos.x, pow(fbm3(p), 3.f) * 2.f, vs_Pos.z, 1.0);
-  vec4 modelposition = vec4(vs_Pos.x, final_result, vs_Pos.z, 1.0);
-  //vec4 modelposition = vec4(vs_Pos.x, result, vs_Pos.z, 1.0);
+  fs_tval = t;
+  fs_ry = height + ((fbm3(p * 20.0) - 0.5) / 4.0);
+
+  fs_p = p;
+  fs_test = fbm3(p * 5.0);
+  fs_colM1 = fbm3( test_p * 10.0 );
+  vec2 col2 = vec2(height, vs_Pos.x);
+  fs_colM2 = fbm(col2.x * 10.0, col2.y * 10.f);
+  
+
+  vec4 modelposition = vec4(vs_Pos.x, height, vs_Pos.z, 1.0);
   modelposition = u_Model * modelposition;
   gl_Position = u_ViewProj * modelposition;
 }

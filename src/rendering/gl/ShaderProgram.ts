@@ -30,6 +30,11 @@ class ShaderProgram {
   unifViewProj: WebGLUniformLocation;
   unifColor: WebGLUniformLocation;
   unifPlanePos: WebGLUniformLocation;
+  unifMount: WebGLUniformLocation;
+  unifPerlin: WebGLUniformLocation;
+  unifPath: WebGLUniformLocation;
+  unifTone: WebGLUniformLocation;
+  unifNight: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -49,6 +54,11 @@ class ShaderProgram {
     this.unifModelInvTr = gl.getUniformLocation(this.prog, "u_ModelInvTr");
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
     this.unifPlanePos   = gl.getUniformLocation(this.prog, "u_PlanePos");
+    this.unifMount   = gl.getUniformLocation(this.prog, "u_Mount");
+    this.unifPerlin   = gl.getUniformLocation(this.prog, "u_Perlin");
+    this.unifPath   = gl.getUniformLocation(this.prog, "u_Path");
+    this.unifTone   = gl.getUniformLocation(this.prog, "u_Tone");
+    this.unifNight   = gl.getUniformLocation(this.prog, "u_Night");
   }
 
   use() {
@@ -76,6 +86,46 @@ class ShaderProgram {
     this.use();
     if (this.unifViewProj !== -1) {
       gl.uniformMatrix4fv(this.unifViewProj, false, vp);
+    }
+  }
+
+  setMountains(mount: number) {
+    this.use();
+    if (this.unifMount !== -1) {
+      gl.uniform1f(this.unifMount, mount);
+    }
+  }
+
+  setPerlin(per: number) {
+    this.use();
+    if (this.unifPerlin !== -1) {
+      gl.uniform1f(this.unifPerlin, per);
+    }
+  }
+  
+  setPath(p: number) {
+    this.use();
+    if (this.unifPath !== -1) {
+      gl.uniform1f(this.unifPath, p);
+    }
+  }
+
+  setTone(t: number) {
+    this.use();
+    if (this.unifTone !== -1) {
+      gl.uniform1f(this.unifTone, t);
+    }
+  }
+
+  setNight(n: boolean) {
+    this.use();
+    if (this.unifNight !== -1) {
+      if (n) {
+        gl.uniform1i(this.unifNight, 1);
+      }
+      else {
+        gl.uniform1i(this.unifNight, 0);
+      }
     }
   }
 
