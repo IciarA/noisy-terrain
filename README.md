@@ -15,13 +15,13 @@ The terrain in this project is the combination of two different random calculati
 ## GUI Features
 - **Mountains**: Change the plain areas to become a mountain area and vice versa.  
 Default value (mountains = 1.0):
-![](mountains1.png)
+![](Mountains1.png)
 Filled plains with mountains (mountains = 0.0):
-![](mountains0.png)
+![](Mountains0.png)
 Lowering the mountain area (mountains = 1.7):
-![](mountains1.7.png)
+![](Mountains1.7.png)
 Lower the mountain area completely so that everything is flat (mountains = 2.0):
-![](mountains2.png)
+![](Mountains2.png)
 
 - **Perlin**: Modify some of the Perlin noise properties to increase or decrease the separation paths between the mountains and the grass areas in the flat sections.  
 Default value (perlin = 2.0):
