@@ -54,6 +54,9 @@ A high value makes everything brighter (colorTone = 1.2):
 Night sky look full of stars, with a lower value for the color tone as well to make it more realistic (nightSky = true, colorTone = 0.5):
 ![](night.png)
 
+## Build Instructions
+To build the project you need to install Node.js and then run 'npm install' and then 'npm start'.
+
 ## Resources
 - https://workshop.chromeexperiments.com/examples/gui/#1--Basic-Usage
 - http://iquilezles.org/www/articles/morenoise/morenoise.htm

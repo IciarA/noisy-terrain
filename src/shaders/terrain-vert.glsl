@@ -216,7 +216,7 @@ void main()
   result = -dist + dist2;
   result = pow(clamp(result, 0.1f, 0.9f) - 0.1f, 0.5f);
 
-    float final_result = pow(mix(result, fbm3(p), 0.3f), 4.f) * 5.f;
+  float final_result = pow(mix(result, fbm3(p), 0.3f), 4.f) * 5.f;
 
 
   p = vec2(vs_Pos.x + u_PlanePos.x, vs_Pos.z + u_PlanePos.y);
